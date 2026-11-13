@@ -1,11 +1,12 @@
 
-import {useState } from 'react'
+import { Button, MenuItem, Select, TextField } from '@mui/material'
+import { useState } from 'react'
 
 const App = () => {
 
   let [data, setData] = useState([
-    { id: 1, name: "Ali", age: 20,status:true },
-    { id: 2, name: "Vali", age: 21,status:false }
+    { id: 1, name: "Ali", age: 20, status: true },
+    { id: 2, name: "Vali", age: 21, status: false }
   ])
 
   let [addModal, setaddModal] = useState(false)
@@ -13,9 +14,9 @@ const App = () => {
   let [inpName, setInpName] = useState("")
   let [inpAge, setInpAge] = useState("")
   let [idx, setidx] = useState(null)
-  let [search,setSearch]=useState('')
+  let [search, setSearch] = useState('')
 
-  let [status,setStatus]=useState<string>('all')
+  let [status, setStatus] = useState<string>('all')
 
   let deletedUser = (id) => {
     setData(data.filter((e) => e.id != id))
@@ -27,7 +28,7 @@ const App = () => {
       id: Date.now(),
       name: e.target.name.value,
       age: e.target.age.value,
-      status:true
+      status: true
     }
     setData([...data, newUser])
     setaddModal(false)
@@ -38,7 +39,8 @@ const App = () => {
     let editUser = {
       id: idx,
       name: e.target.name.value,
-      age: e.target.age.value
+      age: e.target.age.value,
+      // status:e.target.status.value
     }
     setData((prev) => prev.map((e) => e.id == idx ? editUser : e))
     seteditModal(false)
@@ -51,26 +53,26 @@ const App = () => {
     setidx(e.id)
   }
 
-  
-    let filteredUsers=data.filter((user)=>{
 
-      let res=user.name.toLowerCase().includes(search.toLowerCase())
+  let filteredUsers = data.filter((user) => {
 
-      let resStat=status=='all' || user.status == JSON.parse(status)
+    let res = user.name.toLowerCase().includes(search.toLowerCase())
 
-      return res && resStat
-    })
-  
+    let resStat = status == 'all' || user.status == JSON.parse(status)
+
+    return res && resStat
+  })
+
   return (
     <div>
 
-      <button onClick={() => setaddModal(true)} className='bg-[#0095ff] text-[white] rounded-[5px] px-2.5 py-20px'>add</button>
-      <input type="text" placeholder='Search...' value={search} onChange={(e)=>setSearch(e.target.value)} />
-      <select value={status} onChange={(e)=>setStatus(e.target.value)}>
-        <option value="all">All</option>
-        <option value="true">Active</option>
-        <option value="false">Inactive</option>
-      </select>
+      <Button onClick={() => setaddModal(true)} variant="contained">Add User</Button>
+      <TextField value={search} onChange={(e) => setSearch(e.target.value)} id="outlined-basic" label="Search" variant="outlined" />
+      <Select labelId="demo-simple-select-outlined-label" id="demo-simple-select-outlined" value={status} onChange={(e) => setStatus(e.target.value)} label="Status">
+        <MenuItem value={"all"}>All</MenuItem>
+        <MenuItem value={"true"}>Active</MenuItem>
+        <MenuItem value={"false"}>Inactive</MenuItem>
+      </Select>
       {
         addModal ?
           <div style={{ background: "rgba(214,214,215,0.5)", height: "100vh", position: "absolute", top: "0", width: "100%" }}>
@@ -82,8 +84,8 @@ const App = () => {
                 <input name='age' style={{ width: "90%", padding: "10px", border: "1px solid black", borderRadius: "5px", outline: "none" }} type="text" placeholder='Age' />
 
                 <div style={{ width: "90%", display: "flex", justifyContent: "end", gap: "20px" }}>
-                  <button style={{ cursor: "pointer", padding: "10px 20px", border: "1px solid navy", borderRadius: "5px", outline: "none", background: "green", color: "white" }}>add</button>
-                  <button onClick={() => setaddModal(false)} style={{ cursor: "pointer", padding: "10px 20px", border: "1px solid red", borderRadius: "5px", outline: "none", background: "red", color: "white" }}>cancel</button>
+                  <Button type='submit' variant="contained">add</Button>
+                  <Button  onClick={() => setaddModal(false)} variant="contained"  color="error">Cancel</Button>
                 </div>
 
               </form>
@@ -104,8 +106,8 @@ const App = () => {
                 <input defaultValue={inpAge} name='age' style={{ width: "90%", padding: "10px", border: "1px solid black", borderRadius: "5px", outline: "none" }} type="text" placeholder='Age' />
 
                 <div style={{ width: "90%", display: "flex", justifyContent: "end", gap: "20px" }}>
-                  <button style={{ cursor: "pointer", padding: "10px 20px", border: "1px solid navy", borderRadius: "5px", outline: "none", background: "green", color: "white" }}>edit</button>
-                  <button onClick={() => seteditModal(false)} style={{ cursor: "pointer", padding: "10px 20px", border: "1px solid red", borderRadius: "5px", outline: "none", background: "red", color: "white" }}>cancel</button>
+                  <Button type='submit' variant="contained">submit</Button>
+                  <Button  onClick={() => seteditModal(false)} variant="contained"  color="error">cancel</Button>
                 </div>
 
               </form>
@@ -121,11 +123,11 @@ const App = () => {
               <div className='border-2 rounded-[5px] p-2.5 flex flex-col items-center gap-2.5' key={e.id}>
                 <h1>{e.name}</h1>
                 <p>{e.age}</p>
-                <p>{e.status?"Active":"Inactive"}</p>
+                <p>{e.status ? "Active" : "Inactive"}</p>
                 <div className='flex gap-5'>
-                  <button onClick={() => deletedUser(e.id)} className='bg-[red] text-[white] rounded-[5px] px-5 py-1'>Delete</button>
-                  <button onClick={() => openEditModal(e)} className='bg-[blue] text-[white] rounded-[5px] px-5 py-1'>Edit</button>
-                  <button className='bg-[white] text-[black] border rounded-[5px] px-5 py-1'>Info</button>
+                  <Button  onClick={() => deletedUser(e.id)} variant="outlined"  color="error">Delete</Button>
+                  <Button  onClick={() => openEditModal(e)} variant="outlined">Edit</Button>
+                  <Button variant="outlined">Info</Button>
                 </div>
               </div>
             )
