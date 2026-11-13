@@ -1,10 +1,9 @@
-import Card from "./Components/card"
+import { Button } from "@/components/ui/button"
 
 const App = () => {
   return (
     <div>
-      <Card name="Ali" age={12}></Card>
-      <Card name="Vali" age={13}></Card>
+      <Button>Click me</Button>
     </div>
   )
 }
