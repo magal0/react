@@ -81,7 +81,8 @@ const App = () => {
   async function deletedUser(id: string) {
     try {
       await axios.delete(`${API}/${id}`)
-      setData(prev => prev.filter(user => user.id !== id))
+      // setData(prev => prev.filter(user => user.id !== id))
+      getUsers()
     } catch (error) {
       console.error(error)
     }
@@ -105,7 +106,8 @@ const App = () => {
 
     try {
       const { data } = await axios.put(`${API}/${editId}`, updatedUser)
-      setData(prev => prev.map(user => user.id === editId ? data : user))
+      // setData(prev => prev.map(user => user.id === editId ? data : user))
+      getUsers()
       setEditModal(false)
     } catch (error) {
       console.error(error)
