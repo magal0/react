@@ -1,37 +1,126 @@
-import { useEffect, useState } from 'react'
+import React, { useDebugValue, useEffect, useState } from 'react'
 import axios from 'axios'
 
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/Components/ui/dialog"
+import { Input } from "@/Components/ui/input"
 
-const Get = () => {
-  const api = 'https://69b7cc98ffbcd02860963626.mockapi.io/data'
-  const [data, setdata] = useState([])
-  const [triger, settriger] = useState([true])
 
-  async function getdata() {
+
+const App = () => {
+  let api = "https://to-dos-api.softclub.tj/api/to-dos"
+
+  let [data, setData] = useState([])
+  let [open, setOpen] = useState(false)
+  async function getUsers() {
     try {
-      const { data } = await axios.get(api)
-      setdata(data)
+      let { data } = await axios.get(api)
+      console.log(data);
+      setData(data.data)
     } catch (error) {
-      console.error(error)
+      console.error(error);
+    }
+  }
+  useEffect(() => {
+    getUsers()
+  }, [])
+
+  async function deletedUser(id) {
+    try {
+      await axios.delete(`${api}?id=${id}`)
+      getUsers()
+    } catch (error) {
+      console.error(error);
+
     }
   }
 
-  useEffect(() => {
-    getdata()
-  }, [triger])
+  async function addUser(user: FormData) {
+    try {
+      let res = await axios.post(api, user)
+
+
+      await getUsers()
+    } catch (error) {
+      console.log("ERROR:", error.response?.data || error)
+    }
+  }
+
+  async function handleSubmit(e: any) {
+    e.preventDefault()
+
+    let newuser = new FormData()
+
+    newuser.append("Name", e.currentTarget.name.value)
+    newuser.append("Description", e.currentTarget.desc.value)
+
+    for (let el of e.currentTarget.photo.files) {
+      newuser.append("Images", el)
+    }
+
+    await addUser(newuser)
+  }
 
   return (
     <div>
-      <button onClick={() => settriger(prev => !prev)}>Click</button>
       {
-        data.map((el) => {
-          return <div>
-            <h1>{el.name}</h1>
-          </div>
+        <div>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger render={<Button variant="outline">Open Dialog</Button>} />
+
+            <DialogContent className="sm:max-w-sm">
+              <form onSubmit={handleSubmit}>
+                <DialogHeader>
+                  <DialogTitle>Add profile</DialogTitle>
+                </DialogHeader>
+
+                <Input name="name" placeholder="Name" />
+
+                <Input name="desc" placeholder="Description" />
+
+                <Input type="file" multiple name="photo" />
+
+                <DialogFooter>
+                  <Button type="submit">Add</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+      }
+      {
+        data.map((user) => {
+          return (
+            <div key={user.id}>
+              {user.images?.map((img, index) => (
+                <img
+                  key={index}
+                  src={img}
+                  alt={user.name}
+                  width="150"
+                />
+              ))}
+              <h1>{user.name}</h1>
+              <p>{user.isComplited ? "Active" : "Inactive"}</p>
+              <div>
+                <button onClick={() => deletedUser(user.id)}>Delete</button>
+              </div>
+            </div>
+          )
         })
       }
     </div>
   )
 }
 
-export default Get
+export default App
