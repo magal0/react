@@ -21,6 +21,8 @@ const App = () => {
 
   let [data, setData] = useState([])
   let [open, setOpen] = useState(false)
+  let [editOpen, setEditOpen] = useState(false)
+  let [selectedUser, setSelectedUser] = useState(null)
   async function getUsers() {
     try {
       let { data } = await axios.get(api)
@@ -70,6 +72,42 @@ const App = () => {
     await addUser(newuser)
   }
 
+
+  function editUser(user) {
+    setSelectedUser(user)
+    setEditOpen(true)
+  }
+
+  async function updateUser(e) {
+    e.preventDefault()
+
+    console.log("EDIT BUTTON WORKS!")
+
+    console.log("Selected user:", selectedUser)
+
+    let updatedUser = new FormData()
+
+    updatedUser.append("Name", e.currentTarget.name.value)
+    updatedUser.append("Description", e.currentTarget.desc.value)
+
+    for (let el of e.currentTarget.photo.files) {
+      updatedUser.append("Images", el)
+    }
+
+    try {
+      let res = await axios.put(`${api}/${selectedUser.id}`, updatedUser)
+
+      console.log("UPDATED:", res.data)
+
+      await getUsers()
+      setEditOpen(false)
+      setSelectedUser(null)
+
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
   return (
     <div>
       {
@@ -95,6 +133,40 @@ const App = () => {
               </form>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogContent className="sm:max-w-sm">
+
+              <form key={selectedUser?.id} onSubmit={updateUser}>
+                <DialogHeader>
+                  <DialogTitle>Edit profile</DialogTitle>
+                </DialogHeader>
+
+                <Input
+                  name="name"
+                  placeholder="Name"
+                  defaultValue={selectedUser?.name}
+                />
+
+                <Input
+                  name="desc"
+                  placeholder="Description"
+                  defaultValue={selectedUser?.description}
+                />
+
+                <Input
+                  type="file"
+                  multiple
+                  name="photo"
+                />
+
+                <DialogFooter>
+                  <Button type="submit">Save</Button>
+                </DialogFooter>
+              </form>
+
+            </DialogContent>
+          </Dialog>
         </div>
 
       }
@@ -114,6 +186,7 @@ const App = () => {
               <p>{user.isComplited ? "Active" : "Inactive"}</p>
               <div>
                 <button onClick={() => deletedUser(user.id)}>Delete</button>
+                <button onClick={() => editUser(user)}>Edit</button>
               </div>
             </div>
           )
