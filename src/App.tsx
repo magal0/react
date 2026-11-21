@@ -1,197 +1,189 @@
-import React, { useDebugValue, useEffect, useState } from 'react'
+import { useEffect, useState, type SubmitEvent } from 'react'
 import axios from 'axios'
 
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
-  DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/Components/ui/dialog"
-import { Input } from "@/Components/ui/input"
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 
+interface TodoImage {
+  id: number
+  imageName: string
+}
 
+interface Todo {
+  id: number
+  name: string
+  description: string
+  isCompleted: boolean
+  images?: TodoImage[]
+}
+
+const baseUrl = "https://to-dos-api.softclub.tj"
+const api = `${baseUrl}/api/to-dos`
+
+function readForm(form: HTMLFormElement) {
+  const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement
+  return {
+    name: field("name").value.trim(),
+    description: field("desc").value.trim(),
+    files: Array.from(field("photo").files ?? []),
+  }
+}
 
 const App = () => {
-  let api = "https://to-dos-api.softclub.tj/api/to-dos"
+  const [data, setData] = useState<Todo[]>([])
+  const [open, setOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<Todo | null>(null)
 
-  let [data, setData] = useState([])
-  let [open, setOpen] = useState(false)
-  let [editOpen, setEditOpen] = useState(false)
-  let [selectedUser, setSelectedUser] = useState(null)
   async function getUsers() {
     try {
-      let { data } = await axios.get(api)
-      console.log(data);
+      const { data } = await axios.get(api)
       setData(data.data)
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
   }
+
   useEffect(() => {
-    getUsers()
+    axios
+      .get(api)
+      .then(({ data }) => setData(data.data))
+      .catch(console.error)
   }, [])
 
-  async function deletedUser(id) {
+  async function deletedUser(id: number) {
     try {
       await axios.delete(`${api}?id=${id}`)
-      getUsers()
-    } catch (error) {
-      console.error(error);
-
-    }
-  }
-
-  async function addUser(user: FormData) {
-    try {
-      let res = await axios.post(api, user)
-
-
       await getUsers()
     } catch (error) {
-      console.log("ERROR:", error.response?.data || error)
+      console.error(error)
     }
   }
 
-  async function handleSubmit(e: any) {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
+    const form = e.currentTarget
+    const { name, description, files } = readForm(form)
 
-    let newuser = new FormData()
-
-    newuser.append("Name", e.currentTarget.name.value)
-    newuser.append("Description", e.currentTarget.desc.value)
-
-    for (let el of e.currentTarget.photo.files) {
-      newuser.append("Images", el)
+    if (!name || !description || files.length === 0) {
+      alert("Name, description and at least one image are required")
+      return
     }
 
-    await addUser(newuser)
+    const fd = new FormData()
+    fd.append("Name", name)
+    fd.append("Description", description)
+    files.forEach((file) => fd.append("Images", file))
+
+    try {
+      await axios.post(api, fd)
+      await getUsers()
+      form.reset()
+      setOpen(false)
+    } catch (error) {
+      console.error("ERROR:", axios.isAxiosError(error) ? error.response?.data : error)
+    }
   }
 
-
-  function editUser(user) {
+  function editUser(user: Todo) {
     setSelectedUser(user)
     setEditOpen(true)
   }
 
-  async function updateUser(e) {
+  async function updateUser(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (!selectedUser) return
 
-    console.log("EDIT BUTTON WORKS!")
+    const { name, description, files } = readForm(e.currentTarget)
 
-    console.log("Selected user:", selectedUser)
-
-    let updatedUser = new FormData()
-
-    updatedUser.append("Name", e.currentTarget.name.value)
-    updatedUser.append("Description", e.currentTarget.desc.value)
-
-    for (let el of e.currentTarget.photo.files) {
-      updatedUser.append("Images", el)
+    if (!name || !description) {
+      alert("Name and description are required")
+      return
     }
 
     try {
-      let res = await axios.put(`${api}/${selectedUser.id}`, updatedUser)
+      // Update text fields (API expects JSON)
+      await axios.put(api, { id: selectedUser.id, name, description })
 
-      console.log("UPDATED:", res.data)
+      // Optionally upload new images
+      if (files.length > 0) {
+        const fd = new FormData()
+        files.forEach((file) => fd.append("Images", file))
+        await axios.post(`${api}/${selectedUser.id}/images`, fd)
+      }
 
       await getUsers()
       setEditOpen(false)
       setSelectedUser(null)
-
     } catch (error) {
-      console.log(error)
+      console.error(error)
     }
   }
 
   return (
     <div>
-      {
-        <div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger render={<Button variant="outline">Open Dialog</Button>} />
+      <div>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger render={<Button variant="outline">Open Dialog</Button>} />
 
-            <DialogContent className="sm:max-w-sm">
-              <form onSubmit={handleSubmit}>
-                <DialogHeader>
-                  <DialogTitle>Add profile</DialogTitle>
-                </DialogHeader>
+          <DialogContent className="sm:max-w-sm">
+            <form onSubmit={handleSubmit}>
+              <DialogHeader>
+                <DialogTitle>Add profile</DialogTitle>
+              </DialogHeader>
 
-                <Input name="name" placeholder="Name" />
+              <Input name="name" placeholder="Name" />
+              <Input name="desc" placeholder="Description" />
+              <Input type="file" multiple name="photo" />
 
-                <Input name="desc" placeholder="Description" />
+              <DialogFooter>
+                <Button type="submit">Add</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
-                <Input type="file" multiple name="photo" />
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="sm:max-w-sm">
+            <form key={selectedUser?.id} onSubmit={updateUser}>
+              <DialogHeader>
+                <DialogTitle>Edit profile</DialogTitle>
+              </DialogHeader>
 
-                <DialogFooter>
-                  <Button type="submit">Add</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+              <Input name="name" placeholder="Name" defaultValue={selectedUser?.name} />
+              <Input name="desc" placeholder="Description" defaultValue={selectedUser?.description} />
+              <Input type="file" multiple name="photo" />
 
-          <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogContent className="sm:max-w-sm">
+              <DialogFooter>
+                <Button type="submit">Save</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-              <form key={selectedUser?.id} onSubmit={updateUser}>
-                <DialogHeader>
-                  <DialogTitle>Edit profile</DialogTitle>
-                </DialogHeader>
-
-                <Input
-                  name="name"
-                  placeholder="Name"
-                  defaultValue={selectedUser?.name}
-                />
-
-                <Input
-                  name="desc"
-                  placeholder="Description"
-                  defaultValue={selectedUser?.description}
-                />
-
-                <Input
-                  type="file"
-                  multiple
-                  name="photo"
-                />
-
-                <DialogFooter>
-                  <Button type="submit">Save</Button>
-                </DialogFooter>
-              </form>
-
-            </DialogContent>
-          </Dialog>
+      {data.map((user) => (
+        <div key={user.id}>
+          {user.images?.map((img) => (
+            <img key={img.id} src={`${baseUrl}/images/${img.imageName}`} alt={user.name} width="150" />
+          ))}
+          <h1>{user.name}</h1>
+          <p>{user.description}</p>
+          <p>{user.isCompleted ? "Completed" : "Not completed"}</p>
+          <div>
+            <button onClick={() => deletedUser(user.id)}>Delete</button>
+            <button onClick={() => editUser(user)}>Edit</button>
+          </div>
         </div>
-
-      }
-      {
-        data.map((user) => {
-          return (
-            <div key={user.id}>
-              {user.images?.map((img, index) => (
-                <img
-                  key={index}
-                  src={img}
-                  alt={user.name}
-                  width="150"
-                />
-              ))}
-              <h1>{user.name}</h1>
-              <p>{user.isComplited ? "Active" : "Inactive"}</p>
-              <div>
-                <button onClick={() => deletedUser(user.id)}>Delete</button>
-                <button onClick={() => editUser(user)}>Edit</button>
-              </div>
-            </div>
-          )
-        })
-      }
+      ))}
     </div>
   )
 }
