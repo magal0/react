@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Link } from "react-router-dom";
 
 function Home() {
   return (
@@ -13,7 +14,7 @@ function Home() {
         <p className="mt-5 text-gray-600">
           Delicious food made with love.
         </p>
-        <Button className="mt-6">Explore Menu</Button>
+        <Button className="mt-6"><Link to="/menu">Menu</Link></Button>
       </section>
 
       {/* Section 2 */}
