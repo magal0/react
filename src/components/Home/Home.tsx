@@ -1,69 +1,252 @@
 
+import { useEffect, useState } from "react";
+import axios from "axios";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 function Home() {
+  const [data, setData] = useState([]);
+  const [editId, setEditId] = useState(null);
+
+  const [openAdd, setOpenAdd] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [images, setImages] = useState([]);
+
+  const api = "https://to-dos-api.softclub.tj/api/to-dos";
+  const imgapi = "https://to-dos-api.softclub.tj/images/";
+
+  async function getTodos() {
+    try {
+      setLoading(true);
+
+      const { data } = await axios.get(api);
+      setData(data.data);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleAdd() {
+    setEditId(null);
+    setName("");
+    setDescription("");
+    setImages([]);
+    setOpenAdd(true);
+  }
+
+  function handleEdit(todo) {
+    setEditId(todo.id);
+    setName(todo.name);
+    setDescription(todo.description);
+    setOpenEdit(true);
+  }
+
+  async function saveTodo(e) {
+    e.preventDefault();
+
+    try {
+      if (editId !== null) {
+        await axios.put(api, {
+          id: editId,
+          name: name,
+          description: description,
+        });
+
+        setOpenEdit(false);
+      } else {
+        const formData = new FormData();
+
+        formData.append("Name", name);
+        formData.append("Description", description);
+
+        images.forEach((image) => {
+          formData.append("Images", image);
+        });
+
+        await axios.post(api, formData);
+
+        setOpenAdd(false);
+      }
+
+      setName("");
+      setDescription("");
+      setImages([]);
+      setEditId(null);
+
+      getTodos();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function deleteTodo(id) {
+    try {
+      await axios.delete(`${api}?id=${id}`);
+      getTodos();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    getTodos();
+  }, []);
+
   return (
-    <main>
-      {/* Section 1 */}
-      <section className="bg-orange-50 text-center py-24">
-        <h1 className="text-5xl font-bold">
-          Welcome To Bella Restaurant
-        </h1>
-        <p className="mt-5 text-gray-600">
-          Delicious food made with love.
-        </p>
-        <Button className="mt-6"><Link to="/menu">Menu</Link></Button>
-      </section>
+    <main className="min-h-screen bg-gray-50 p-6">
+      <div className="mx-auto max-w-6xl">
 
-      {/* Section 2 */}
-      <section className="py-16 text-center">
-        <h2 className="text-3xl font-bold">Welcome</h2>
-        <p className="mt-4 max-w-xl mx-auto">
-          We serve fresh, tasty and delicious food
-          for everyone.
-        </p>
-      </section>
+        <div className="mb-8 flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Users</h1>
 
-      {/* Section 3 */}
-      <section className="bg-gray-50 py-16 px-10">
-        <h2 className="text-3xl font-bold text-center">
-          Popular Dishes
-        </h2>
-
-        <div className="grid md:grid-cols-3 gap-6 mt-10">
-          {["Pizza", "Burger", "Pasta"].map((item) => (
-            <Card key={item}>
-              <CardContent className="p-8 text-center">
-                <h3 className="text-xl font-bold">{item}</h3>
-                <p className="mt-3">$15.00</p>
-              </CardContent>
-            </Card>
-          ))}
+          <Button onClick={handleAdd}>
+            + Add User
+          </Button>
         </div>
-      </section>
 
-      {/* Section 4 */}
-      <section className="py-16 text-center">
-        <h2 className="text-3xl font-bold">Why Choose Us?</h2>
-        <div className="flex justify-center gap-10 mt-8 flex-wrap">
-          <p>Fresh Food</p>
-          <p>Best Chefs</p>
-          <p>Good Service</p>
-        </div>
-      </section>
+        <Dialog open={openAdd} onOpenChange={setOpenAdd}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Add User</DialogTitle>
+            </DialogHeader>
 
-      {/* Section 5 */}
-      <section className="bg-orange-100 text-center py-16">
-        <h2 className="text-3xl font-bold">
-          Come And Enjoy Our Food
-        </h2>
-        <p className="mt-3">We are waiting for you!</p>
-        <Button className="mt-5">Book A Table</Button>
-      </section>
+            <form onSubmit={saveTodo} className="flex flex-col gap-3">
+              <Input
+                placeholder="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+
+              <Input
+                placeholder="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+              />
+
+              <Input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) =>
+                  setImages(Array.from(e.target.files || []))
+                }
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpenAdd(false)}
+                >
+                  Cancel
+                </Button>
+
+                <Button type="submit">
+                  Add
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={openEdit} onOpenChange={setOpenEdit}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={saveTodo} className="flex flex-col gap-3">
+              <Input
+                placeholder="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+
+              <Input
+                placeholder="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpenEdit(false)}
+                >
+                  Cancel
+                </Button>
+
+                <Button type="submit">
+                  Save
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {loading ? (
+          <p className="py-10 text-center text-gray-500">Loading tasks...</p>
+        ) : data.length === 0 ? (
+          <div className="rounded-xl border bg-white p-10 text-center">
+            <h2 className="text-xl font-semibold">No user found</h2>
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {data.map((user) => (
+              <Card key={user.id} className="overflow-hidden bg-white">
+
+                {user.images?.map((image) => (
+                  <img
+                    src={imgapi + image.imageName}
+                    className="h-48 w-full object-cover"
+                  />
+                ))}
+
+                <CardContent className="space-y-4 p-5">
+                  <div>
+                    <h2 className="text-xl font-bold">{user.name}</h2>
+                    <p className="mt-2 text-sm text-gray-500">{user.description}</p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1" onClick={() => handleEdit(user)}>Edit</Button>
+
+                    <Button variant="destructive" className="flex-1" onClick={() => deleteTodo(user.id)}>Delete</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </main>
   );
 }
 
 export default Home;
+
+
+
